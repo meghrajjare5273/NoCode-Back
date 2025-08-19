@@ -1,0 +1,7 @@
+# Datasets
+*.csv
+*.json
+
+
+# ENV Files
+.env
