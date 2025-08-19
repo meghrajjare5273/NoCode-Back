@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     upload_directory: str = "uploads"
     
     # CORS Configuration
-    cors_origins: List[str] = ["http://localhost:3000", "http://127.0.0.1:3000"]
+    cors_origins: List[str] = ["http://localhost:3000", "http://127.0.0.1:3000", "http://127.0.0.1:8000", "http://localhost:8000"]
     
     # Processing Configuration
     max_chunk_size: int = 10000

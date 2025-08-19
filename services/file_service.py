@@ -7,7 +7,7 @@ from fastapi import UploadFile, HTTPException
 import structlog
 
 from config.settings import settings
-from utils.validators import validate_file
+from utils.validators import file_validator
 from services.insight_service import InsightService
 
 logger = structlog.get_logger()
@@ -21,7 +21,7 @@ class FileService:
     async def save_uploaded_file(self, file: UploadFile) -> str:
         """Save uploaded file to disk"""
         # Validate file
-        validate_file(file)
+        file_validator.validate_file(file)
         
         # Generate safe filename
         safe_filename = self._sanitize_filename(file.filename)

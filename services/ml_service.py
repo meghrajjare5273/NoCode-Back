@@ -17,6 +17,16 @@ from sklearn.cluster import KMeans, DBSCAN
 from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
 import joblib
 import structlog
+import asyncio
+import pandas as pd
+import joblib
+from concurrent.futures import ThreadPoolExecutor
+from typing import Dict, Any, Optional
+from pathlib import Path
+import structlog
+
+# from services.ml_service import MLService
+from utils.exceptions import ModelTrainingError
 
 from config.settings import settings
 
@@ -274,3 +284,72 @@ class MLService:
         except Exception as e:
             logger.warning(f"Could not extract feature importance: {str(e)}")
             return None
+        
+
+
+
+
+class AsyncMLService:
+    def __init__(self):
+        self.ml_service = MLService()
+        self.executor = ThreadPoolExecutor(max_workers=4)
+    
+    async def train_model_async(
+        self,
+        file_path: str,
+        task_type: str,
+        model_type: Optional[str] = None,
+        target_column: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Train model asynchronously in background thread"""
+        try:
+            loop = asyncio.get_event_loop()
+            result = await loop.run_in_executor(
+                self.executor,
+                self.ml_service.train_model,
+                file_path,
+                task_type,
+                model_type,
+                target_column
+            )
+            return result
+        except Exception as e:
+            logger.error(f"Async training error: {str(e)}")
+            raise ModelTrainingError(f"Async training failed: {str(e)}")
+    
+    async def predict_async(self, model_path: Path, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Make predictions asynchronously"""
+        try:
+            loop = asyncio.get_event_loop()
+            result = await loop.run_in_executor(
+                self.executor,
+                self._predict_sync,
+                model_path,
+                data
+            )
+            return result
+        except Exception as e:
+            logger.error(f"Async prediction error: {str(e)}")
+            raise ModelTrainingError(f"Async prediction failed: {str(e)}")
+    
+    def _predict_sync(self, model_path: Path, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Synchronous prediction method"""
+        model = joblib.load(model_path)
+        
+        # Convert input data to DataFrame
+        input_df = pd.DataFrame([data])
+        
+        # Make prediction
+        prediction = model.predict(input_df)
+        
+        # Get prediction probabilities if available
+        probabilities = None
+        if hasattr(model, 'predict_proba'):
+            probabilities = model.predict_proba(input_df).tolist()
+        
+        return {
+            "prediction": prediction.tolist(),
+            "probabilities": probabilities,
+            "model_id": model_path.stem
+        }
+
