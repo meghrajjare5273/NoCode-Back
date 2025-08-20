@@ -21,7 +21,7 @@ class FileService:
     async def save_uploaded_file(self, file: UploadFile) -> str:
         """Save uploaded file to disk"""
         # Validate file
-        file_validator.validate_file(file)
+        await file_validator.validate_file(file)
         
         # Generate safe filename
         safe_filename = self._sanitize_filename(file.filename)
